@@ -62,6 +62,12 @@ df = spark.read.option("header", "true").option("inferSchema", "true").option("m
 # df.show(5)  
 ```
 
+```{python}
+# Histogram of SALARY distribution
+fig = px.histogram(df.toPandas(), x="SALARY", nbins=50, title="Salary Distribution")
+fig.update_layout(bargap=0.1)
+```
+
 # Data Preparation
 
 ```{python}
