@@ -81,8 +81,9 @@ fig.update_layout(xaxis_title="Salary Bin", yaxis_title="Frequency", bargap=0.1)
 df = df.withColumn("SALARY", col("SALARY").cast("float")) \
        .withColumn("SALARY_FROM", col("SALARY_FROM").cast("float")) \
        .withColumn("SALARY_TO", col("SALARY_TO").cast("float")) \
-         .withColumn("MIN_YEARS_EXPERIENCE", col("MIN_YEARS_EXPERIENCE").cast("float")) \
-       .withColumn("MAX_YEARS_EXPERIENCE", col("MAX_YEARS_EXPERIENCE").cast("float"))
+       .withColumn("MIN_YEARS_EXPERIENCE", col("MIN_YEARS_EXPERIENCE").cast("float")) \
+       .withColumn("MAX_YEARS_EXPERIENCE", col("MAX_YEARS_EXPERIENCE").cast("float")) 
+
        
 
 
@@ -93,25 +94,27 @@ def compute_median(sdf, col_name):
 
 median_from = compute_median(df, "SALARY_FROM")
 median_to = compute_median(df, "SALARY_TO")
+median_salary = compute_median(df, "SALARY")
        
-print("Medians:", median_from, median_to)
+print("Medians:", median_from, median_to, median_salary)
 
 #Step 3: Imputing missing salaries, but not experience
 df = df.fillna({
   "SALARY_FROM": median_from, 
-  "SALARY_TO": median_to
+  "SALARY_TO": median_to,
+  "SALARY": median_salary
   })
 
 # Step 5: Computing average salary
-df = df.withColumn("Average_Salary", (col("SALARY_FROM") + col("SALARY_TO")) / 
-2)
+df = df.withColumn("Average_Salary", (col("SALARY_FROM") + col("SALARY_TO")) / 2)
 
 # Step 6: Selecting required columns
 export_cols = [
-  "EDUCATION_LEVELS_NAME" ,
-  "REMOTE_TYPE_NAME" ,
-  "MAX_YEARS_EXPERIENCE" ,
-  "Average_Salary" ,
+  "EDUCATION_LEVELS_NAME",
+  "REMOTE_TYPE_NAME",
+  "MAX_YEARS_EXPERIENCE",
+  "Average_Salary",
+  "median_salary", 
   "LOT_V6_SPECIALIZED_OCCUPATION_NAME"
 ]
 df_selected = df.select(*export_cols)
@@ -121,7 +124,26 @@ pdf = df_selected.toPandas()
 pdf.to_csv("./data/lightcast_cleaned.csv", index=False)
 
 print("Data cleaning complete. Rows retained:", len(pdf))
+pdf.head() # Preview the first few rows
 ```
+
+# Your code for 1st question here
+
+# Filter out missing or zero salary values
+pdf = df.filter(df["SALARY"] > 0).select("EMPLOYMENT_TYPE_NAME", "SALARY").toPandas()
+
+# Clean employment type names for better readability
+pdf["EMPLOYMENT_TYPE_NAME"] = pdf["EMPLOYMENT_TYPE_NAME"].apply(lambda x: re.sub(r"[^\x00-\x7F]+","", x))
+
+# Compute median salary for sorting
+median_salaries = pdf.groupby("EMPLOYMENT_TYPE_NAME")["SALARY"].median()
+
+# Sort employment types based on median salary in descending order
+sorted_employment_types = median_salaries.sort_values(ascending=False).index
+
+# Apply sorted categories
+pdf["EMPLOYMENT_TYPE_NAME"] = pd.Categorical()
+
 
 # Salary Distribution by Industry and Employment Type
 - Compare salary variations across industries.
