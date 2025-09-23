@@ -29,6 +29,40 @@ The instruction below provides you with general keywords for columns used in the
    -[Copying code from your friend constitutes plagiarism. DO NOT DO THIS]{.bloodred-bold}.
 
 ```{python}
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder \
+    .appName("Lightcast Job Postings Analysis") \
+    .getOrCreate()
+
+df = spark.read.option("header", "true") \
+               .option("inferSchema", "true") \
+               .option("multiLine", "true") \
+               .option("escape", "\"") \
+               .csv("/home/ubuntu/assignment-03-cindyrg-cloud/data/lightcast_job_postings.csv")
+
+```
+
+
+#| eval: true
+#|
+# Step 1: Create Companies Table (Primary Key: company_id)
+```{python}
+companies_df = df.select(
+  col("company"),
+  col("company_name"),
+  col("company_raw"),
+  col("company_is_staffing")
+).distinct().withColumn("company_id", monotonically_increasing_id())
+# companies_df.show(5)
+companies = companies_df.toPandas()
+companies.drop(columns=["company"], inplace=True)
+companies.rename(columns={"company_is_staffing": "is_staffing"}, inplace=True)
+companies.to_csv("./output/companies.csv", index=False)
+companies.head()
+```
+
+```{python}
 #| eval: true
 #| echo: true
 #| fig-align: center
@@ -60,6 +94,9 @@ df = spark.read.option("header", "true").option("inferSchema", "true").option("m
 # df.show(5)  
 ```
 
+
+![](./figures/Q1.svg)
+
 ```{python}
 # Histogram of SALARY distribution
 from pyspark.sql.functions import floor
@@ -85,8 +122,6 @@ df = df.withColumn("SALARY", col("SALARY").cast("float")) \
        .withColumn("MAX_YEARS_EXPERIENCE", col("MAX_YEARS_EXPERIENCE").cast("float")) 
 
        
-
-
 # Step 2: Computing medians for salary columns
 def compute_median(sdf, col_name):
     q = sdf.approxQuantile(col_name, [0.5], 0.01)
@@ -169,4 +204,26 @@ pdf["EMPLOYMENT_TYPE_NAME"] = pd.Categorical()
 - **Visualize results**
   - Create a **bubble chart** where:
    - **X-axis** = `ONET_NAME`
-   - **Y-axis** = `
+   - **Y-axis** = `Median Salary`
+   - **Size** = Number of job postings
+  - Apply custom colors and font styles.
+- **Explanation:** Write two sentences about what the graph reveals.
+
+# Salary by Education Level
+
+- Create two groups:
+  - **Bachelor’s or lower** (Bachelor's, GED, Associate, No Education Listed)
+  - **Master’s or PhD** (Master's degree, Ph.D. or professional degree)
+- Plot scatter plots for each group using, `MAX_YEARS_EXPERIENCE` (with jitter), `Average_Salary`, `LOT_V6_SPECIALIZED_OCCUPATION_NAME`
+- Then, plot histograms overlaid with KDE curves for each group.
+- This would generate two scatter plots and two histograms.
+- **After each graph, add a short explanation** of key insights.
+
+# Salary by Remote Work Type
+- Split into three groups based on `REMOTE_TYPE_NAME`:
+  - Remote  
+  - Hybrid  
+  - Onsite (includes `[None]` and blank)
+- Plot scatter plots for each group using, `MAX_YEARS_EXPERIENCE` (with jitter), `Average_Salary`, `LOT_V6_SPECIALIZED_OCCUPATION_NAME`
+- Also, create salary histograms for all three groups.
+- **After each graph, briefly describe any patterns or comparisons.**
