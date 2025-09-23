@@ -44,23 +44,7 @@ df = spark.read.option("header", "true") \
 ```
 
 
-#| eval: true
-#|
-# Step 1: Create Companies Table (Primary Key: company_id)
-```{python}
-companies_df = df.select(
-  col("company"),
-  col("company_name"),
-  col("company_raw"),
-  col("company_is_staffing")
-).distinct().withColumn("company_id", monotonically_increasing_id())
-# companies_df.show(5)
-companies = companies_df.toPandas()
-companies.drop(columns=["company"], inplace=True)
-companies.rename(columns={"company_is_staffing": "is_staffing"}, inplace=True)
-companies.to_csv("./output/companies.csv", index=False)
-companies.head()
-```
+
 
 ```{python}
 #| eval: true
@@ -111,6 +95,25 @@ fig = px.bar(binned_df, x="SALARY_BIN", y="count", title="Salary Distribution by
 fig.update_layout(xaxis_title="Salary Bin", yaxis_title="Frequency", bargap=0.1)
 ```
 
+#| eval: true
+#|
+# Step 1: Create Companies Table (Primary Key: company_id)
+```{python}
+companies_df = df.select(
+  col("company"),
+  col("company_name"),
+  col("company_raw"),
+  col("company_is_staffing")
+).distinct().withColumn("company_id", monotonically_increasing_id())
+# companies_df.show(5)
+companies = companies_df.toPandas()
+companies.drop(columns=["company"], inplace=True)
+companies.rename(columns={"company_is_staffing": "is_staffing"}, inplace=True)
+companies.to_csv("./output/companies.csv", index=False)
+companies.head()
+```
+
+
 # Data Preparation
 
 ```{python}
@@ -149,7 +152,7 @@ export_cols = [
   "REMOTE_TYPE_NAME",
   "MAX_YEARS_EXPERIENCE",
   "Average_Salary",
-  "median_salary", 
+  "SALARY", 
   "LOT_V6_SPECIALIZED_OCCUPATION_NAME"
 ]
 df_selected = df.select(*export_cols)
@@ -161,6 +164,8 @@ pdf.to_csv("./data/lightcast_cleaned.csv", index=False)
 print("Data cleaning complete. Rows retained:", len(pdf))
 pdf.head() # Preview the first few rows
 ```
+
+
 
 # Your code for 1st question here
 
