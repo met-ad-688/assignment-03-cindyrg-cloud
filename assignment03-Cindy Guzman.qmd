@@ -16,8 +16,6 @@ format:
     toc-depth: 2
    docx: default
    pdf: default
-execute:
-  freeze: true
 date-modified: today
 date-format: long
 ---
@@ -64,8 +62,16 @@ df = spark.read.option("header", "true").option("inferSchema", "true").option("m
 
 ```{python}
 # Histogram of SALARY distribution
-fig = px.histogram(df.toPandas(), x="SALARY", nbins=50, title="Salary Distribution")
-fig.update_layout(bargap=0.1)
+from pyspark.sql.functions import floor
+
+binned_df = df.filter(col("SALARY").isNotNull() & (col("SALARY") > 0)) \
+              .withColumn("SALARY_BIN", floor(col("SALARY") / 5000) * 5000) \
+              .groupBy("SALARY_BIN").count() \
+              .orderBy("SALARY_BIN") \
+              .toPandas()
+
+fig = px.bar(binned_df, x="SALARY_BIN", y="count", title="Salary Distribution by Bin")
+fig.update_layout(xaxis_title="Salary Bin", yaxis_title="Frequency", bargap=0.1)
 ```
 
 # Data Preparation
@@ -78,7 +84,6 @@ df = df.withColumn("SALARY", col("SALARY").cast("float")) \
          .withColumn("MIN_YEARS_EXPERIENCE", col("MIN_YEARS_EXPERIENCE").cast("float")) \
        .withColumn("MAX_YEARS_EXPERIENCE", col("MAX_YEARS_EXPERIENCE").cast("float"))
        
-
 
 
 # Step 2: Computing medians for salary columns
